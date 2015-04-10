@@ -1,0 +1,1 @@
+gom 'github.com/kirs/zabbix', :branch => 'zabbix-2-0'
