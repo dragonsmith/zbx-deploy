@@ -30,7 +30,7 @@ func startHandler(w http.ResponseWriter, req *http.Request) {
 
 	projects[project].MaintenanceId = inserted
 
-	fmt.Fprintf(w, "maintenance %d created\n", remove)
+	fmt.Fprintf(w, "maintenance %d created\n", inserted)
 }
 
 func finishHandler(w http.ResponseWriter, req *http.Request) {
@@ -74,7 +74,7 @@ func CleanupMaintenances() {
 	}
 }
 
-func prepareProjects(config Config) map[string]*projectStatus {
+func prepareProjects() map[string]*projectStatus {
 	projects = make(map[string]*projectStatus, 0)
 
 	for k, v := range config.Projects {
@@ -95,10 +95,7 @@ func TokenMiddleware(rw http.ResponseWriter, r *http.Request, next http.HandlerF
 
 func main() {
 	parseConfig()
-
-	fmt.Printf("config: %v\n", config)
-	projects = prepareProjects(config)
-	fmt.Printf("projects: %v\n", projects)
+	projects = prepareProjects()
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
