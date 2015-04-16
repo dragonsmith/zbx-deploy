@@ -22,7 +22,7 @@ func LoginZabbix(endpoint, username, password string) {
 		fmt.Printf("error: %s\n", err)
 	}
 
-	fmt.Printf("version: %s\n", versionresult)
+	fmt.Printf("Zabbix version detected: %s\n", versionresult)
 
 	_, err = api.Login()
 	if err != nil {
@@ -30,15 +30,13 @@ func LoginZabbix(endpoint, username, password string) {
 		return
 	}
 
-	fmt.Println("Connected to API!")
-
-	fmt.Printf("api.auth: %s", api.GetAuth())
+	fmt.Println("Connected to Zabbix API")
 }
 
-func CreateMaintenance(name string, description string, duration int, groupids []int) (int64, error) {
+func CreateMaintenance(name string, description string, duration int, hostids []int) (int64, error) {
 	since := time.Now().Unix()
 	params := make(map[string]interface{})
-	params["groupids"] = groupids
+	params["hostids"] = hostids
 	params["name"] = name
 	params["maintenance_type"] = 0
 	params["description"] = description
@@ -55,6 +53,7 @@ func CreateMaintenance(name string, description string, duration int, groupids [
 	params["timeperiods"] = timeperiods
 
 	response, err := api.ZabbixRequest("maintenance.create", params)
+
 	if err != nil {
 		return 0, err
 	}
