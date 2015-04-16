@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
 )
 
 func helloHandler(w http.ResponseWriter, req *http.Request) {
@@ -17,13 +18,22 @@ func helloHandler(w http.ResponseWriter, req *http.Request) {
 
 func startHandler(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
+	req.ParseForm()
 	project := vars["project"]
 
 	if projects[project] == nil {
 		return
 	}
 
-	inserted, err := CreateMaintenance("demo", "demo", 600, projects[project].GroupIds)
+	if projects[project].MaintenanceId > 0 {
+		fmt.Fprintf(w, "already deploying: %d", projects[project].MaintenanceId)
+		return
+	}
+
+	const layout = "Jan 2, 2006 at 3:04pm (MST)"
+	deployer := req.FormValue("deployer")
+	time := time.Now().Format(layout)
+	inserted, err := CreateMaintenance(fmt.Sprintf("deploy: %s @ %s", project, time), fmt.Sprintf("deployed by %s", deployer), 600, projects[project].GroupIds)
 	if err != nil {
 		log.Fatalf("Failed to create: %v", err)
 	}
@@ -78,7 +88,7 @@ func prepareProjects() map[string]*projectStatus {
 	projects = make(map[string]*projectStatus, 0)
 
 	for k, v := range config.Projects {
-		projects[k] = &projectStatus{[]int{v}, 0}
+		projects[k] = &projectStatus{v, 0}
 	}
 
 	return projects
@@ -111,7 +121,6 @@ func main() {
 	username := os.Getenv("ZBX_USER")
 	password := os.Getenv("ZBX_PASSWORD")
 
-	fmt.Printf("endpoint: %s\n", endpoint)
 	LoginZabbix(endpoint, username, password)
 
 	r := mux.NewRouter()

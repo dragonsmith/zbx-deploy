@@ -8,7 +8,7 @@ import (
 
 type Config struct {
 	Token    string
-	Projects map[string]int
+	Projects map[string][]int
 }
 
 var config Config
