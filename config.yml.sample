@@ -1,4 +1,10 @@
+zabbix:
+  endpoint: https://monitor.evilmartians.com/api_jsonrpc.php
+  username: root
+  password: adm1n
+
 token: Ieyib0ch2es2ed1aOonga9ie
-# host ids
 projects:
-  projectname: 16
+  projectname:
+    - 16
+    - 32

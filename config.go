@@ -9,6 +9,11 @@ import (
 type Config struct {
 	Token    string
 	Projects map[string][]int
+	Zabbix   struct {
+		Endpoint string
+		Username string
+		Password string
+	}
 }
 
 var config Config

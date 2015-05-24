@@ -117,11 +117,7 @@ func main() {
 		}
 	}()
 
-	endpoint := os.Getenv("ZBX_ENDPOINT")
-	username := os.Getenv("ZBX_USER")
-	password := os.Getenv("ZBX_PASSWORD")
-
-	LoginZabbix(endpoint, username, password)
+	LoginZabbix(config.Zabbix.Endpoint, config.Zabbix.Username, config.Zabbix.Password)
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", helloHandler)
