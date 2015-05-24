@@ -38,6 +38,7 @@ func startHandler(w http.ResponseWriter, req *http.Request) {
 		log.Fatalf("Failed to create: %v", err)
 	}
 
+	fmt.Printf("[%s] creating maintenance #%d\n", project, inserted)
 	projects[project].MaintenanceId = inserted
 
 	fmt.Fprintf(w, "maintenance %d created\n", inserted)
@@ -53,9 +54,9 @@ func finishHandler(w http.ResponseWriter, req *http.Request) {
 
 	remove := projects[project].MaintenanceId
 
-	fmt.Fprintf(w, "removing maintenance %d\n", remove)
 	if remove > 0 {
-		fmt.Printf("deleting %d\n", remove)
+		fmt.Fprintf(w, "removing maintenance %d\n", remove)
+		fmt.Printf("[%s] deleting maintenance #%d\n", project, remove)
 		DeleteMaintenance(remove)
 
 		projects[project].MaintenanceId = 0
@@ -78,7 +79,7 @@ func init() {
 func CleanupMaintenances() {
 	for key, value := range projects {
 		if value.MaintenanceId > 0 {
-			fmt.Printf("cleaning up %s %d", key, value.MaintenanceId)
+			fmt.Printf("[%s] cleaning up maintenance #%d\n", key, value.MaintenanceId)
 			DeleteMaintenance(value.MaintenanceId)
 		}
 	}
