@@ -24,7 +24,7 @@ POST /finish/project-name # trigger it on deploy finish
 There is a simple Makefile script for deploy built-in to this app:
 
 ```
-ZBX_DEPLOY_TARGET=deploy@yourzabbix.com:/home/zbx-deploy/app/server make release
+ZBX_DEPLOY_TARGET=deploy@yourzabbix.com:/home/zbx-deploy/app/server make deploy
 ```
 
 `ZBX_DEPLOY_TARGET` is the ENV variable with the host and directory to deploy, set in scp-capable format.

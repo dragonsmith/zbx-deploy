@@ -10,7 +10,7 @@ clean:
 build:
 	gom build -o bin/server main.go zabbix.go config.go
 
-release:
+deploy:
 	GOOS=linux gom install
 	GOOS=linux gom build -o $(TMP_TARGET) main.go zabbix.go config.go
 
