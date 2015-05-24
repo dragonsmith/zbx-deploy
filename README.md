@@ -1,5 +1,8 @@
 # Zabbix deploy helper
 
+<a href="https://evilmartians.com/">
+<img src="https://evilmartians.com/badges/sponsored-by-evil-martians.svg" alt="Sponsored by Evil Martians" width="236" height="54"></a>
+
 ### Problem
 For a huge web app installations, deploy may take up to 10 minutes.
 For some services like Sidekiq, you need to shutdown the service when the deploy starts and start it back when the deploy finishes.
