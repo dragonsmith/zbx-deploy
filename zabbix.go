@@ -1,8 +1,10 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"github.com/kirs/zabbix"
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -11,7 +13,12 @@ var api *zabbix.API
 
 func LoginZabbix(endpoint, username, password string) {
 	var err error
-	api, err = zabbix.NewAPI(endpoint, username, password)
+
+	// custom transport to avoid SSL check
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	api, err = zabbix.NewAPI(endpoint, username, password, transport)
 	if err != nil {
 		fmt.Printf("error: %s\n", err)
 		return
