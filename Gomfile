@@ -1,4 +1,3 @@
 gom 'github.com/kirs/zabbix', :branch => 'custom-transport'
 gom 'github.com/gorilla/mux'
 gom 'gopkg.in/yaml.v2'
-gom 'github.com/codegangsta/negroni'

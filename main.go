@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -19,47 +18,59 @@ func helloHandler(w http.ResponseWriter, req *http.Request) {
 func startHandler(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	req.ParseForm()
-	project := vars["project"]
+	projectName := vars["project"]
 
-	if projects[project] == nil {
+	if projects[projectName] == nil {
 		return
 	}
 
-	if projects[project].MaintenanceId > 0 {
-		fmt.Fprintf(w, "already deploying: %d", projects[project].MaintenanceId)
+	token := req.Header.Get("X-Auth-Token")
+	if token != config.Projects[projectName].Token {
+		http.Error(w, "invalid token", 401)
+		return
+	}
+
+	if projects[projectName].MaintenanceId > 0 {
+		fmt.Fprintf(w, "already deploying: %d", projects[projectName].MaintenanceId)
 		return
 	}
 
 	const layout = "Jan 2, 2006 at 3:04pm (MST)"
 	deployer := req.FormValue("deployer")
 	time := time.Now().Format(layout)
-	inserted, err := CreateMaintenance(fmt.Sprintf("deploy: %s @ %s", project, time), fmt.Sprintf("deployed by %s", deployer), 600, projects[project].GroupIds)
+	inserted, err := CreateMaintenance(fmt.Sprintf("deploy: %s @ %s", projectName, time), fmt.Sprintf("deployed by %s", deployer), config.DeployDuration, projects[projectName].GroupIds)
 	if err != nil {
 		log.Fatalf("Failed to create: %v", err)
 	}
 
-	fmt.Printf("[%s] creating maintenance #%d\n", project, inserted)
-	projects[project].MaintenanceId = inserted
+	fmt.Printf("[%s] creating maintenance #%d\n", projectName, inserted)
+	projects[projectName].MaintenanceId = inserted
 
 	fmt.Fprintf(w, "maintenance %d created\n", inserted)
 }
 
 func finishHandler(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-	project := vars["project"]
+	projectName := vars["project"]
 
-	if projects[project] == nil {
+	if projects[projectName] == nil {
 		return
 	}
 
-	remove := projects[project].MaintenanceId
+	token := req.Header.Get("X-Auth-Token")
+	if token != config.Projects[projectName].Token {
+		http.Error(w, "invalid token", 401)
+		return
+	}
+
+	remove := projects[projectName].MaintenanceId
 
 	if remove > 0 {
 		fmt.Fprintf(w, "removing maintenance %d\n", remove)
-		fmt.Printf("[%s] deleting maintenance #%d\n", project, remove)
+		fmt.Printf("[%s] deleting maintenance #%d\n", projectName, remove)
 		DeleteMaintenance(remove)
 
-		projects[project].MaintenanceId = 0
+		projects[projectName].MaintenanceId = 0
 	}
 }
 
@@ -89,19 +100,10 @@ func prepareProjects() map[string]*projectStatus {
 	projects = make(map[string]*projectStatus, 0)
 
 	for k, v := range config.Projects {
-		projects[k] = &projectStatus{v, 0}
+		projects[k] = &projectStatus{v.Hosts, 0}
 	}
 
 	return projects
-}
-
-func TokenMiddleware(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	token := r.Header.Get("X-Auth-Token")
-	if token != config.Token {
-		http.Error(rw, "invalid token", 401)
-	} else {
-		next(rw, r)
-	}
 }
 
 func main() {
@@ -125,9 +127,12 @@ func main() {
 	r.HandleFunc("/start/{project}", startHandler)
 	r.HandleFunc("/finish/{project}", finishHandler)
 
-	n := negroni.New()
-	n.Use(negroni.HandlerFunc(TokenMiddleware))
-	n.UseHandler(r)
+	http.Handle("/", r)
 
-	n.Run(bindAddress)
+	fmt.Printf("Starting API on %s\n", bindAddress)
+
+	err := http.ListenAndServe(bindAddress, r)
+	if err != nil {
+		log.Fatalf("Server start error: %v", err)
+	}
 }

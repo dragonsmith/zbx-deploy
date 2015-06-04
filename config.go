@@ -7,9 +7,12 @@ import (
 )
 
 type Config struct {
-	Token    string
-	Projects map[string][]int
-	Zabbix   struct {
+	DeployDuration int
+	Projects       map[string]struct {
+		Token string
+		Hosts []int
+	}
+	Zabbix struct {
 		Endpoint string
 		Username string
 		Password string

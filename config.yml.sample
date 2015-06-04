@@ -1,10 +1,17 @@
+deploy_duration: 1200
 zabbix:
   endpoint: https://monitor.evilmartians.com/api_jsonrpc.php
   username: root
   password: adm1n
-
-token: Ieyib0ch2es2ed1aOonga9ie
 projects:
-  projectname:
-    - 16
-    - 32
+  projectone:
+    token: foobar
+    hosts:
+      - 1
+      - 2
+  projecttwo:
+    token: foobar2
+    hosts:
+      - 3
+      - 4
+      - 5
