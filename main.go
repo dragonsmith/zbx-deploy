@@ -38,7 +38,14 @@ func startHandler(w http.ResponseWriter, req *http.Request) {
 	const layout = "Jan 2, 2006 at 3:04pm (MST)"
 	deployer := req.FormValue("deployer")
 	time := time.Now().Format(layout)
-	inserted, err := CreateMaintenance(fmt.Sprintf("deploy: %s @ %s", projectName, time), fmt.Sprintf("deployed by %s", deployer), config.DeployDuration, projects[projectName].GroupIds)
+
+	duration := config.DeployDuration
+	if duration == 0 {
+		// can't be zero
+		duration = 600
+	}
+
+	inserted, err := CreateMaintenance(fmt.Sprintf("deploy: %s @ %s", projectName, time), fmt.Sprintf("deployed by %s", deployer), duration, projects[projectName].GroupIds)
 	if err != nil {
 		log.Fatalf("Failed to create: %v", err)
 	}

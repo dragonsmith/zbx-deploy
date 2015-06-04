@@ -7,7 +7,7 @@ import (
 )
 
 type Config struct {
-	DeployDuration int
+	DeployDuration int `yaml:"deploy_duration"`
 	Projects       map[string]struct {
 		Token string
 		Hosts []int
