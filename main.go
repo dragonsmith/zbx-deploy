@@ -56,6 +56,19 @@ func startHandler(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, "maintenance %d created\n", inserted)
 }
 
+func delayedDeleteMaintenance(delay time.Duration, projectName string, id int64) {
+	// stupid way to sleep in thread
+	c := time.Tick(delay)
+	for _ = range c {
+    break
+	}
+
+	fmt.Printf("[%s] deleting maintenance #%d\n", projectName, id)
+	DeleteMaintenance(id)
+
+	projects[projectName].MaintenanceId = 0
+}
+
 func finishHandler(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	projectName := vars["project"]
@@ -73,11 +86,8 @@ func finishHandler(w http.ResponseWriter, req *http.Request) {
 	remove := projects[projectName].MaintenanceId
 
 	if remove > 0 {
-		fmt.Fprintf(w, "removing maintenance %d\n", remove)
-		fmt.Printf("[%s] deleting maintenance #%d\n", projectName, remove)
-		DeleteMaintenance(remove)
-
-		projects[projectName].MaintenanceId = 0
+		fmt.Fprintf(w, "removing maintenance %d after 2 minutes\n", remove)
+		go delayedDeleteMaintenance(2*time.Minute, projectName, remove)
 	}
 }
 
