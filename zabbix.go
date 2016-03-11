@@ -77,6 +77,80 @@ func CreateMaintenance(name string, description string, duration int, hostids []
 	return id, nil
 }
 
+func UpdateMaintenance(id int64, duration int, hostids []int) error {
+	params := make(map[string]interface{})
+	params["maintenanceids"] = id
+	response, err := api.ZabbixRequest("maintenance.get", params)
+
+	if err != nil {
+		return err
+	}
+
+	if response.Error.Code != 0 {
+		return err
+	}
+
+	maintenance := response.Result.([]interface{})[0].(map[string]interface{})
+
+	since, err := strconv.ParseInt(maintenance["active_since"].(string), 10, 64)
+	if err != nil {
+		return err
+	}
+
+	now := time.Now().Unix()
+	till := now + int64(duration)
+
+	params = make(map[string]interface{})
+	params["maintenanceid"] = id
+	params["active_since"] = since
+	params["active_till"] = till
+	params["hostids"] = hostids
+
+
+	period := make(map[string]string)
+	period["timeperiod_type"] = "0"
+	period["start_date"] = fmt.Sprintf("%d", since)
+	period["period"] = fmt.Sprintf("%d", now - since + int64(duration))
+
+	timeperiods := []map[string]string{}
+	timeperiods = append(timeperiods, period)
+	params["timeperiods"] = timeperiods
+
+	response, err = api.ZabbixRequest("maintenance.update", params)
+	if err != nil {
+		return err
+	}
+
+	if response.Error.Code != 0 {
+		return err
+	}
+
+	return nil
+}
+
+func IsExpired(id int64) bool {
+	params := make(map[string]interface{})
+	params["maintenanceids"] = id
+	response, err := api.ZabbixRequest("maintenance.get", params)
+
+	if err != nil {
+		return false
+	}
+
+	if response.Error.Code != 0 {
+		return false
+	}
+
+	maintenance := response.Result.([]interface{})[0].(map[string]interface{})
+
+	till, err := strconv.ParseInt(maintenance["active_till"].(string), 10, 64)
+	if err != nil {
+		return false
+	}
+
+	return till < time.Now().Unix()
+}
+
 func DeleteMaintenance(id int64) error {
 	params := make([]int64, 1)
 	params[0] = id

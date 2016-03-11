@@ -30,11 +30,6 @@ func startHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if projects[projectName].MaintenanceId > 0 {
-		fmt.Fprintf(w, "already deploying: %d", projects[projectName].MaintenanceId)
-		return
-	}
-
 	const layout = "Jan 2, 2006 at 3:04pm (MST)"
 	deployer := req.FormValue("deployer")
 	time := time.Now().Format(layout)
@@ -44,6 +39,39 @@ func startHandler(w http.ResponseWriter, req *http.Request) {
 		// can't be zero
 		duration = 600
 	}
+
+	// We need to prolongate existing maintenance period
+	// instead of ignoring it.
+  if projects[projectName].MaintenanceId > 0 && IsExpired(projects[projectName].MaintenanceId) {
+		err := DeleteMaintenance(projects[projectName].MaintenanceId)
+		if err != nil {
+			fmt.Fprintf(w, "Error occured while deleting expired #%d\n", projects[projectName].MaintenanceId)
+			fmt.Printf("[%s] Error occured while deleting expired #%d\n", projectName, projects[projectName].MaintenanceId)
+			return
+		}
+		fmt.Fprintf(w, "Expired old #%d was deleted.\n", projects[projectName].MaintenanceId)
+		fmt.Printf("[%s] Expired old #%d was deleted.\n", projectName, projects[projectName].MaintenanceId)
+		projects[projectName].MaintenanceId = 0
+  }
+
+  if projects[projectName].MaintenanceId > 0 {
+		fmt.Fprintf(w,
+			"Already deploying #%d, adding %d more seconds, counting from now.\n",
+			projects[projectName].MaintenanceId,
+			duration)
+		fmt.Printf("[%s] already deploying #%d, adding %d more seconds, counting from now.\n",
+			projectName,
+			projects[projectName].MaintenanceId,
+			duration)
+
+		err := UpdateMaintenance(projects[projectName].MaintenanceId, duration, projects[projectName].GroupIds)
+
+		if err != nil {
+			fmt.Fprintf(w, "Error occured while updating duration for: #%d\n", projects[projectName].MaintenanceId)
+			fmt.Printf("[%s] Error occured while updating duration for: #%d\n", projectName, projects[projectName].MaintenanceId)
+		}
+		return
+  }
 
 	inserted, err := CreateMaintenance(fmt.Sprintf("deploy: %s @ %s", projectName, time), fmt.Sprintf("deployed by %s", deployer), duration, projects[projectName].GroupIds)
 	if err != nil {
@@ -57,16 +85,12 @@ func startHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func delayedDeleteMaintenance(delay time.Duration, projectName string, id int64) {
-	// stupid way to sleep in thread
-	c := time.Tick(delay)
-	for _ = range c {
-    break
+	delay = delay / time.Second
+	fmt.Printf("[%s] Expiring current maintenance #%d in %d seconds.\n", projectName, id, delay)
+	err := UpdateMaintenance(projects[projectName].MaintenanceId, int(delay), projects[projectName].GroupIds)
+	if err != nil {
+		fmt.Printf("[%s] Error occured while expiring #%d\n", projectName, projects[projectName].MaintenanceId)
 	}
-
-	fmt.Printf("[%s] deleting maintenance #%d\n", projectName, id)
-	DeleteMaintenance(id)
-
-	projects[projectName].MaintenanceId = 0
 }
 
 func finishHandler(w http.ResponseWriter, req *http.Request) {
@@ -87,7 +111,7 @@ func finishHandler(w http.ResponseWriter, req *http.Request) {
 
 	if remove > 0 {
 		fmt.Fprintf(w, "removing maintenance %d after 2 minutes\n", remove)
-		go delayedDeleteMaintenance(2*time.Minute, projectName, remove)
+		delayedDeleteMaintenance(2*time.Minute, projectName, remove)
 	}
 }
 
